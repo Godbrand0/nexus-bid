@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import { WagmiProvider } from 'wagmi'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { config } from '@/lib/wagmi'
+import { RainbowKitProvider } from '@rainbow-me/rainbowkit'
+
+const queryClient = new QueryClient()
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +32,15 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <WagmiProvider config={config}>
+          <QueryClientProvider client={queryClient}>
+            {typeof window !== 'undefined' && (
+              <RainbowKitProvider>
+                {children}
+              </RainbowKitProvider>
+            )}
+          </QueryClientProvider>
+        </WagmiProvider>
       </body>
     </html>
   );

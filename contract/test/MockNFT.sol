@@ -20,3 +20,4 @@ contract MockNFT is ERC721, Ownable {
         return "https://example.com/token/{id}";
     }
 }
+

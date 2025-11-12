@@ -5,6 +5,9 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+
+
+
 /**
  * @title AuctionHouse
  * @notice On-chain auction contract with bid deposits, refunds, and platform fees
@@ -306,6 +309,9 @@ contract AuctionHouse is ReentrancyGuard, Ownable {
     function withdrawFees() external onlyOwner {
         uint256 amount = accumulatedFees;
         require(amount > 0, "No fees to withdraw");
+        
+        uint256 contractBalance = address(this).balance;
+        require(contractBalance >= amount, "Insufficient contract balance");
         
         accumulatedFees = 0;
         

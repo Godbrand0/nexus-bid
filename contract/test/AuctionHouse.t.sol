@@ -3,8 +3,10 @@ pragma solidity ^0.8.20;
 
 import "../lib/forge-std/src/Test.sol";
 import "../lib/forge-std/src/console.sol";
-import "../AuctionHouse.sol";
+import "../src/AuctionHouse.sol";
 import "./MockNFT.sol";
+
+
 
 contract AuctionHouseTest is Test {
     AuctionHouse public auctionHouse;
@@ -514,6 +516,11 @@ contract AuctionHouseTest is Test {
         // Check if accumulated fees match expected
         assertEq(auctionHouse.accumulatedFees(), expectedPlatformFee, "Platform fee accumulation mismatch");
         console.log("Accumulated fees:", auctionHouse.accumulatedFees());
+        
+        // Add diagnostic logs before withdrawal
+        console.log("Contract balance before withdrawal:", address(auctionHouse).balance);
+        console.log("Owner address:", owner);
+        console.log("Owner is contract:", owner.code.length > 0);
         
         vm.prank(owner);
         auctionHouse.withdrawFees();
