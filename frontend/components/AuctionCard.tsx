@@ -60,33 +60,54 @@ export default function AuctionCard({ auction, bids, currentAddress, isSeller }:
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="space-y-4">
-        <div>
-          <h3 className="text-lg text-gray-900 font-semibold">Auction Details</h3>
-          <div className="mt-2 space-y-2 text-sm text-gray-600">
-            <p><span className="font-medium">NFT:</span> {auction.nftContract}</p>
-            <p><span className="font-medium">Token ID:</span> {auction.tokenId?.toString()}</p>
-            <p><span className="font-medium">Seller:</span> {auction.seller}</p>
-            <p><span className="font-medium">Starting Price:</span> {formatEther(auction.startingPrice)} STT</p>
-            <p><span className="font-medium">Current Bid:</span> {formatEther(auction.currentBid)} STT</p>
-            <p><span className="font-medium">Status:</span> {status}</p>
+    <div className="bg-white rounded-sm shadow-lg border border-gray-200 hover:shadow-xl transition-shadow duration-300">
+      <div className="p-6 space-y-5">
+        <div className="border-b border-gray-100 pb-4">
+          <h3 className="text-xl font-serif font-bold text-charcoal mb-1">Lot #{auction.tokenId?.toString()}</h3>
+          <p className="text-sm text-gray-500 font-medium uppercase tracking-wide">
+            {auction.nftContract.slice(0, 6)}...{auction.nftContract.slice(-4)}
+          </p>
+        </div>
+        
+        <div className="space-y-3 text-sm">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600 font-medium">Seller</span>
+            <span className="font-mono text-gray-800 bg-gray-50 px-2 py-1 rounded">
+              {auction.seller.slice(0, 6)}...{auction.seller.slice(-4)}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600 font-medium">Starting Price</span>
+            <span className="font-serif text-gray-900">{formatEther(auction.startingPrice)} STT</span>
+          </div>
+          <div className="flex justify-between items-center bg-cream p-2 rounded border border-gray-100">
+            <span className="text-royal-blue font-bold">Current Bid</span>
+            <span className="font-serif font-bold text-lg text-royal-blue">{formatEther(auction.currentBid)} STT</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600 font-medium">Status</span>
+            <span className={`px-2 py-0.5 text-xs font-bold uppercase tracking-wider rounded-sm ${
+              status === 'Active' ? 'bg-green-100 text-british-green' : 
+              status === 'Ended' ? 'bg-gray-100 text-gray-600' : 'bg-blue-100 text-royal-blue'
+            }`}>
+              {status}
+            </span>
           </div>
         </div>
 
         {isActive && !isSeller && (
-          <div className="space-y-2">
+          <div className="space-y-3 pt-2">
             <input
               type="text"
               value={bidAmount}
               onChange={(e) => setBidAmount(e.target.value)}
               placeholder="Bid amount in STT"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              className="w-full px-4 py-2 border border-gray-300 rounded-sm focus:ring-1 focus:ring-royal-blue focus:border-royal-blue text-black placeholder-gray-400 font-serif"
             />
             <button
               onClick={handlePlaceBid}
               disabled={isSubmitting || !bidAmount}
-              className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 disabled:bg-gray-400 transition-colors"
+              className="w-full bg-british-green text-white py-2.5 px-4 rounded-sm hover:bg-green-900 disabled:bg-gray-400 transition-colors font-serif font-bold uppercase tracking-wide text-sm"
             >
               {isSubmitting ? 'Placing Bid...' : 'Place Bid'}
             </button>
@@ -96,20 +117,20 @@ export default function AuctionCard({ auction, bids, currentAddress, isSeller }:
         {canFinalize && (
           <button
             onClick={handleFinalize}
-            className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition-colors"
+            className="w-full bg-royal-blue text-white py-2.5 px-4 rounded-sm hover:bg-blue-900 transition-colors font-serif font-bold uppercase tracking-wide text-sm"
           >
             Finalize Auction
           </button>
         )}
 
         {bids.length > 0 && (
-          <div>
-            <h4 className="font-semibold mb-2 text-gray-900">Bids ({bids.length})</h4>
-            <div className="space-y-1 max-h-40 overflow-y-auto">
+          <div className="pt-4 border-t border-gray-100">
+            <h4 className="font-serif font-bold mb-3 text-charcoal text-sm uppercase tracking-wide">Recent Bids</h4>
+            <div className="space-y-2 max-h-32 overflow-y-auto pr-1 custom-scrollbar">
               {bids.map((bid, i) => (
-                <div key={i} className="text-sm text-gray-600 flex justify-between">
-                  <span>{bid.bidder.slice(0, 10)}...</span>
-                  <span>{formatEther(bid.amount)} STT</span>
+                <div key={i} className="text-sm flex justify-between items-center py-1 border-b border-gray-50 last:border-0">
+                  <span className="text-gray-600 font-mono text-xs">{bid.bidder.slice(0, 8)}...</span>
+                  <span className="font-medium text-charcoal">{formatEther(bid.amount)} STT</span>
                 </div>
               ))}
             </div>

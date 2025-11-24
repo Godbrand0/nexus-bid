@@ -322,27 +322,27 @@ export default function AuctionDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-cream py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <Link href="/" className="text-blue-600 hover:text-blue-800 flex items-center gap-2">
+        <div className="mb-8">
+          <Link href="/" className="text-royal-blue hover:text-oxford-blue flex items-center gap-2 font-medium transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Back to Auctions
+            <span className="uppercase tracking-wide text-sm">Back to Catalogue</span>
           </Link>
         </div>
 
-        <div className="bg-white rounded-lg shadow-xl overflow-hidden">
-          <div className="p-6 md:p-8">
-            <div className="flex justify-between items-start mb-8">
+        <div className="bg-white rounded-sm shadow-xl overflow-hidden border border-gray-200">
+          <div className="p-8 md:p-12">
+            <div className="flex justify-between items-start mb-10 border-b border-gray-100 pb-6">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Auction Details</h1>
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <span className="font-mono bg-gray-100 px-2 py-1 rounded">ID: {localAuction.auctionId}</span>
+                <h1 className="text-4xl font-serif font-bold text-charcoal mb-3">Lot #{localAuction.tokenId.toString()}</h1>
+                <div className="flex items-center gap-3 text-sm text-gray-500">
+                  <span className="font-mono bg-gray-50 px-3 py-1 rounded border border-gray-200 text-charcoal">ID: {localAuction.auctionId.slice(0, 8)}...</span>
                   <button 
                     onClick={() => copyToClipboard(localAuction.auctionId, 'Auction ID')}
-                    className="text-blue-600 hover:text-blue-800 p-1"
+                    className="text-royal-blue hover:text-oxford-blue p-1 transition-colors"
                     title="Copy Auction ID"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -351,19 +351,23 @@ export default function AuctionDetailPage() {
                   </button>
                 </div>
               </div>
-              <div className={`px-4 py-2 rounded-full font-medium ${statusColor}`}>
+              <div className={`px-6 py-2 rounded-sm font-serif font-bold uppercase tracking-widest text-sm border ${
+                localAuction.isFinalized ? 'bg-blue-50 text-royal-blue border-royal-blue' :
+                isEnded ? 'bg-gray-100 text-gray-600 border-gray-300' :
+                'bg-green-50 text-british-green border-british-green'
+              }`}>
                 {status}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
               {/* Left Column - NFT Display */}
-              <div className="space-y-6">
-                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                  <div className="relative aspect-square bg-gray-100">
+              <div className="space-y-8">
+                <div className="bg-white p-4 shadow-lg border border-gray-100 rotate-1 hover:rotate-0 transition-transform duration-500">
+                  <div className="relative aspect-square bg-gray-50 border border-gray-200">
                     {metadataLoading && (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-royal-blue"></div>
                       </div>
                     )}
                     <img
@@ -376,96 +380,76 @@ export default function AuctionDetailPage() {
                       onError={() => {}}
                     />
                   </div>
-                  <div className="p-6">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                      {formatNFTName(nftMetadata?.metadata || null, localAuction?.tokenId?.toString() || '')}
-                    </h2>
-                    {nftMetadata?.metadata?.description && (
-                      <p className="text-gray-600 text-sm leading-relaxed">
-                        {nftMetadata.metadata.description}
-                      </p>
-                    )}
-                  </div>
+                </div>
+                <div className="prose prose-lg max-w-none">
+                  <h2 className="text-3xl font-serif font-bold text-charcoal mb-4 border-b border-gray-200 pb-2">
+                    {formatNFTName(nftMetadata?.metadata || null, localAuction?.tokenId?.toString() || '')}
+                  </h2>
+                  {nftMetadata?.metadata?.description && (
+                    <p className="text-gray-700 font-serif leading-relaxed italic">
+                      "{nftMetadata.metadata.description}"
+                    </p>
+                  )}
                 </div>
               </div>
 
               {/* Right Column - Auction Info */}
-              <div className="space-y-8">
-                <div className="bg-gray-50 rounded-xl p-6 border border-gray-100">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-6">Asset Information</h3>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                      <span className="text-gray-600">NFT Contract</span>
+              <div className="space-y-10">
+                <div className="bg-cream rounded-sm p-8 border border-gray-200 shadow-inner">
+                  <h3 className="text-xl font-serif font-bold text-charcoal mb-6 uppercase tracking-widest border-b border-gray-300 pb-2">Provenance & Details</h3>
+                  <div className="space-y-4 font-serif">
+                    <div className="flex justify-between items-center py-3 border-b border-gray-200/50">
+                      <span className="text-gray-600 italic">Contract Address</span>
                       <div className="flex items-center gap-2">
                         <a 
                           href={`https://shannon-explorer.somnia.network/address/${localAuction.nftContract}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="font-mono text-blue-600 hover:underline flex items-center gap-1"
+                          className="font-mono text-royal-blue hover:underline flex items-center gap-1 text-sm"
                         >
                           {localAuction.nftContract.slice(0, 10)}...{localAuction.nftContract.slice(-8)}
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                          </svg>
                         </a>
-                        <button 
-                          onClick={() => copyToClipboard(localAuction.nftContract, 'NFT Contract')}
-                          className="text-gray-400 hover:text-gray-600"
-                          title="Copy Contract Address"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
-                        </button>
                       </div>
                     </div>
-                    <div className="flex justify-between text-gray-600 items-center py-2 border-b border-gray-200">
-                      <span className="">Token ID</span>
-                      <span className="font-bold text-lg">#{localAuction.tokenId.toString()}</span>
+                    <div className="flex justify-between items-center py-3 border-b border-gray-200/50">
+                      <span className="text-gray-600 italic">Token ID</span>
+                      <span className="font-bold text-charcoal">#{localAuction.tokenId.toString()}</span>
                     </div>
-                    <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                      <span className="text-gray-600">Seller</span>
-                      <span className="font-mono text-sm text-gray-800">{localAuction.seller.slice(0, 10)}...{localAuction.seller.slice(-8)}</span>
+                    <div className="flex justify-between items-center py-3 border-b border-gray-200/50">
+                      <span className="text-gray-600 italic">Seller</span>
+                      <span className="font-mono text-sm text-charcoal">{localAuction.seller.slice(0, 10)}...{localAuction.seller.slice(-8)}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-blue-50 rounded-xl p-6 border border-blue-100">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-6">Price & Status</h3>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Starting Price</span>
-                      <span className="font-medium text-lg text-gray-600">{formatEther(localAuction.startingPrice)} STT</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Current Bid</span>
-                      <span className="font-bold text-2xl text-blue-600">{formatEther(localAuction.currentBid)} STT</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Highest Bidder</span>
-                      <span className="font-mono text-sm text-gray-600">
-                        {localAuction.highestBidder === '0x0000000000000000000000000000000000000000' 
-                          ? 'No bids yet' 
-                          : `${localAuction.highestBidder.slice(0, 10)}...${localAuction.highestBidder.slice(-8)}`
-                        }
-                      </span>
+                <div className="bg-white rounded-sm p-8 border-2 border-royal-blue/10 shadow-lg">
+                  <h3 className="text-xl font-serif font-bold text-royal-blue mb-6 uppercase tracking-widest text-center">Current Valuation</h3>
+                  <div className="space-y-6 text-center">
+                    <div>
+                      <span className="block text-gray-500 text-sm uppercase tracking-wide mb-1">Current Bid</span>
+                      <span className="block font-serif font-bold text-5xl text-charcoal">{formatEther(localAuction.currentBid)} <span className="text-2xl text-gray-400">STT</span></span>
                     </div>
                     
-                    {localAuction.isFinalized && (
-                      <div className="flex justify-between items-center pt-4 border-t border-blue-200 mt-4 bg-green-50 p-3 rounded-lg">
-                        <span className="text-green-800 font-bold">Winner</span>
-                        <span className="font-mono text-sm text-green-800 font-bold">
-                          {localAuction.highestBidder === '0x0000000000000000000000000000000000000000'
-                            ? 'No Winner'
-                            : `${localAuction.highestBidder.slice(0, 10)}...${localAuction.highestBidder.slice(-8)}`
+                    <div className="flex justify-center gap-8 text-sm border-t border-gray-100 pt-6">
+                      <div>
+                        <span className="block text-gray-500 mb-1">Starting Price</span>
+                        <span className="font-bold text-charcoal">{formatEther(localAuction.startingPrice)} STT</span>
+                      </div>
+                      <div className="w-px bg-gray-200"></div>
+                      <div>
+                        <span className="block text-gray-500 mb-1">Highest Bidder</span>
+                        <span className="font-mono text-charcoal">
+                          {localAuction.highestBidder === '0x0000000000000000000000000000000000000000' 
+                            ? 'No bids' 
+                            : `${localAuction.highestBidder.slice(0, 6)}...${localAuction.highestBidder.slice(-4)}`
                           }
                         </span>
                       </div>
-                    )}
+                    </div>
 
-                    <div className="flex justify-between items-center pt-4 border-t border-blue-200 mt-4">
-                      <span className="text-gray-600">Time Remaining</span>
-                      <span className={`font-bold text-xl ${isActive ? 'text-green-600' : 'text-red-600'}`}>
+                    <div className="pt-4">
+                      <span className="block text-gray-500 text-sm uppercase tracking-wide mb-2">Time Remaining</span>
+                      <span className={`font-mono font-bold text-2xl ${isActive ? 'text-british-green' : 'text-burgundy'}`}>
                         {formatTimeRemaining(localAuction.endTime)}
                       </span>
                     </div>
@@ -473,11 +457,11 @@ export default function AuctionDetailPage() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="space-y-3 pt-4">
+                <div className="space-y-4 pt-2">
                   {isActive && !isSeller && (
                     <button
                       onClick={() => setShowBidModal(true)}
-                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 px-6 rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl font-bold text-lg transform hover:-translate-y-0.5"
+                      className="w-full bg-british-green text-white py-4 px-6 rounded-sm hover:bg-green-900 transition-all shadow-md hover:shadow-lg font-serif font-bold text-xl uppercase tracking-widest border border-green-900"
                     >
                       Place Bid
                     </button>
@@ -486,7 +470,7 @@ export default function AuctionDetailPage() {
                   {canFinalize && isSeller && (
                     <button
                       onClick={handleFinalize}
-                      className="w-full bg-purple-600 text-white py-4 px-6 rounded-xl hover:bg-purple-700 transition-all shadow-lg font-bold text-lg"
+                      className="w-full bg-royal-blue text-white py-4 px-6 rounded-sm hover:bg-blue-900 transition-all shadow-md font-serif font-bold text-xl uppercase tracking-widest"
                     >
                       Finalize Auction
                     </button>
@@ -495,19 +479,19 @@ export default function AuctionDetailPage() {
                   {localAuction.isFinalized && isHighestBidder && (
                     <button
                       onClick={handleImportNFT}
-                      className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 px-6 rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl font-bold text-lg flex items-center justify-center gap-2"
+                      className="w-full bg-gold text-white py-4 px-6 rounded-sm hover:bg-yellow-600 transition-all shadow-md font-serif font-bold text-xl uppercase tracking-widest flex items-center justify-center gap-2"
                     >
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
-                      Import NFT to Wallet
+                      Acquire Asset
                     </button>
                   )}
 
                   {hasBid && !isHighestBidder && !isActive && (
                     <button
                       onClick={handleClaimRefund}
-                      className="w-full bg-gray-600 text-white py-4 px-6 rounded-xl hover:bg-gray-700 transition-all shadow-lg font-bold text-lg"
+                      className="w-full bg-charcoal text-white py-4 px-6 rounded-sm hover:bg-gray-800 transition-all shadow-md font-serif font-bold text-xl uppercase tracking-widest"
                     >
                       Claim Refund
                     </button>
@@ -515,50 +499,55 @@ export default function AuctionDetailPage() {
                 </div>
               </div>
 
-              {/* Right Column - Bids */}
-              <div className="flex flex-col h-full">
-                <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-                  Bid History 
-                  <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-sm">{localBids.length}</span>
+              {/* Bids Section - Full Width below */}
+              <div className="lg:col-span-2 mt-8">
+                <h3 className="text-2xl font-serif font-bold text-charcoal mb-6 border-b-2 border-gray-200 pb-2 flex justify-between items-end">
+                  <span>Bid History</span>
+                  <span className="text-base font-sans font-normal text-gray-500">{localBids.length} Bids Placed</span>
                 </h3>
-                <div className="bg-gray-50 rounded-xl p-6 border border-gray-100 flex-1 overflow-hidden flex flex-col">
-                  <div className="overflow-y-auto pr-2 custom-scrollbar flex-1">
-                    {localBids.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-                        <svg className="w-16 h-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <p>No bids placed yet</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {localBids.map((bid, index) => (
-                          <div key={index} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                            <div className="flex justify-between items-center">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center text-blue-600 font-bold">
-                                  {index + 1}
-                                </div>
-                                <div>
-                                  <div className="font-mono font-medium text-gray-900">
-                                    {bid.bidder.slice(0, 10)}...{bid.bidder.slice(-8)}
+                
+                <div className="bg-white rounded-sm border border-gray-200 shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead className="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                          <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider font-sans">Bidder</th>
+                          <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider font-sans">Time</th>
+                          <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider font-sans text-right">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {localBids.length === 0 ? (
+                          <tr>
+                            <td colSpan={3} className="px-6 py-12 text-center text-gray-400 italic font-serif">
+                              No bids have been recorded for this lot yet.
+                            </td>
+                          </tr>
+                        ) : (
+                          localBids.map((bid, index) => (
+                            <tr key={index} className="hover:bg-cream/50 transition-colors">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-serif font-bold text-sm ${index === 0 ? 'bg-gold text-white' : 'bg-gray-100 text-gray-500'}`}>
+                                    {index + 1}
                                   </div>
-                                  <div className="text-xs text-gray-500">
-                                    {new Date(Number(bid.timestamp) * 1000).toLocaleString()}
-                                  </div>
+                                  <span className="font-mono text-charcoal">{bid.bidder.slice(0, 10)}...</span>
                                 </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="font-bold text-gray-900">{formatEther(bid.amount)} STT</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-gray-600 text-sm">
+                                {new Date(Number(bid.timestamp) * 1000).toLocaleString()}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-right">
+                                <span className="font-bold text-charcoal font-serif text-lg">{formatEther(bid.amount)} STT</span>
                                 {bid.refunded && (
-                                  <div className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full inline-block mt-1">Refunded</div>
+                                  <span className="ml-2 text-xs font-medium text-royal-blue bg-blue-50 px-2 py-0.5 rounded-full">Refunded</span>
                                 )}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
@@ -569,16 +558,16 @@ export default function AuctionDetailPage() {
 
       {/* Bid Modal */}
       {showBidModal && (
-        <div className="fixed inset-0 bg-transparent bg-blur flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all">
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
-              <h3 className="text-2xl font-bold">Place Your Bid</h3>
-              <p className="opacity-90 mt-1">Join the auction for Token #{localAuction.tokenId.toString()}</p>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+          <div className="bg-white rounded-sm shadow-2xl max-w-md w-full overflow-hidden border-t-4 border-gold">
+            <div className="bg-royal-blue p-8 text-white text-center">
+              <h3 className="text-3xl font-serif font-bold mb-2">Place Your Bid</h3>
+              <p className="opacity-80 font-sans text-sm uppercase tracking-wide">Lot #{localAuction.tokenId.toString()}</p>
             </div>
             
             <div className="p-8">
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="mb-8">
+                <label className="block text-sm font-bold text-charcoal mb-2 uppercase tracking-wide">
                   Bid Amount (STT)
                 </label>
                 <div className="relative">
@@ -587,39 +576,33 @@ export default function AuctionDetailPage() {
                     value={bidAmount}
                     onChange={(e) => setBidAmount(e.target.value)}
                     placeholder="0.0"
-                    className="w-full text-slate-700 pl-4 pr-12 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg font-medium"
+                    className="w-full text-black pl-4 pr-16 py-4 border-2 border-gray-200 rounded-sm focus:outline-none focus:border-royal-blue text-2xl font-serif font-bold placeholder-gray-300"
                   />
-                  <div className="absolute right-4 top-3.5 text-gray-400 font-medium">STT</div>
+                  <div className="absolute right-4 top-4 text-gray-400 font-bold font-serif text-xl">STT</div>
                 </div>
-                <div className="mt-3 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                  <div className="flex justify-between mb-1">
-                    <span>Current Bid:</span>
-                    <span className="font-medium">{formatEther(localAuction.currentBid)} STT</span>
-                  </div>
-                  <div className="flex justify-between text-blue-600">
-                    <span>Minimum Bid:</span>
-                    <span className="font-bold">
-                      {formatEther(localAuction.currentBid > localAuction.startingPrice 
-                        ? localAuction.currentBid + BigInt(parseEther('0.01')) 
-                        : localAuction.startingPrice)} STT
-                    </span>
-                  </div>
+                <div className="mt-4 flex justify-between items-center text-sm border-t border-gray-100 pt-3">
+                  <span className="text-gray-600">Minimum Bid Required:</span>
+                  <span className="font-bold text-british-green font-serif text-lg">
+                    {formatEther(localAuction.currentBid > localAuction.startingPrice 
+                      ? localAuction.currentBid + BigInt(parseEther('0.01')) 
+                      : localAuction.startingPrice)} STT
+                  </span>
                 </div>
               </div>
 
               <div className="flex space-x-4">
                 <button
                   onClick={() => setShowBidModal(false)}
-                  className="flex-1 bg-gray-100 text-gray-700 py-3 px-4 rounded-xl hover:bg-gray-200 transition-colors font-medium"
+                  className="flex-1 bg-gray-100 text-gray-600 py-3 px-4 rounded-sm hover:bg-gray-200 transition-colors font-bold uppercase tracking-wide text-sm"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handlePlaceBid}
                   disabled={isSubmitting || !bidAmount}
-                  className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-xl hover:bg-blue-700 disabled:bg-gray-400 transition-colors font-bold shadow-md"
+                  className="flex-1 bg-royal-blue text-white py-3 px-4 rounded-sm hover:bg-blue-900 disabled:bg-gray-400 transition-colors font-bold uppercase tracking-wide text-sm shadow-md"
                 >
-                  {isSubmitting ? 'Placing...' : 'Confirm Bid'}
+                  {isSubmitting ? 'Processing...' : 'Confirm Bid'}
                 </button>
               </div>
             </div>

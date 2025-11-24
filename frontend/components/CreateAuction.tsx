@@ -244,11 +244,11 @@ export default function CreateAuction({ prefillData, onClose }: CreateAuctionPro
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold text-black mb-4">Create New Auction</h3>
-      <form onSubmit={handleCreateAuction} className="space-y-4">
+    <div className="bg-white rounded-sm shadow-lg p-8 border border-gray-200">
+      <h3 className="text-2xl font-serif font-bold text-charcoal mb-6 border-b border-gray-200 pb-2">Create New Lot</h3>
+      <form onSubmit={handleCreateAuction} className="space-y-5">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-bold text-charcoal mb-1 uppercase tracking-wide">
             NFT Contract Address
           </label>
           <input
@@ -257,13 +257,13 @@ export default function CreateAuction({ prefillData, onClose }: CreateAuctionPro
             onChange={(e) => setNftContract(e.target.value)}
             placeholder="0x..."
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-gray-300 rounded-sm text-black focus:outline-none focus:border-royal-blue focus:ring-1 focus:ring-royal-blue font-mono text-sm"
             disabled={isCreating || isApproving}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-bold text-charcoal mb-1 uppercase tracking-wide">
             Token ID
           </label>
           <input
@@ -272,13 +272,13 @@ export default function CreateAuction({ prefillData, onClose }: CreateAuctionPro
             onChange={(e) => setTokenId(e.target.value)}
             placeholder="1"
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-gray-300 rounded-sm text-black focus:outline-none focus:border-royal-blue focus:ring-1 focus:ring-royal-blue font-mono text-sm"
             disabled={isCreating || isApproving}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-bold text-charcoal mb-1 uppercase tracking-wide">
             Starting Price (STT)
           </label>
           <input
@@ -287,44 +287,44 @@ export default function CreateAuction({ prefillData, onClose }: CreateAuctionPro
             onChange={(e) => setStartingPrice(e.target.value)}
             placeholder="1.0"
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-gray-300 rounded-sm text-black focus:outline-none focus:border-royal-blue focus:ring-1 focus:ring-royal-blue font-serif text-lg"
             disabled={isCreating || isApproving}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Duration (seconds)
+          <label className="block text-sm font-bold text-charcoal mb-1 uppercase tracking-wide">
+            Duration
           </label>
           <select
             value={duration}
             onChange={(e) => setDuration(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-gray-300 rounded-sm text-black focus:outline-none focus:border-royal-blue focus:ring-1 focus:ring-royal-blue font-sans"
             disabled={isCreating || isApproving}
           >
-            <option value="3600">1 hour</option>
-            <option value="21600">6 hours</option>
-            <option value="86400">24 hours</option>
-            <option value="259200">3 days</option>
-            <option value="604800">7 days</option>
+            <option value="3600">1 Hour</option>
+            <option value="21600">6 Hours</option>
+            <option value="86400">24 Hours</option>
+            <option value="259200">3 Days</option>
+            <option value="604800">7 Days</option>
           </select>
         </div>
 
         {/* NFT Approval Section */}
         {nftContract && tokenId && !isApproved && (
-          <div className="border-t pt-4">
-            <div className="bg-yellow-50 p-4 rounded-md mb-4">
-              <h4 className="text-sm font-medium text-yellow-800 mb-2">NFT Approval Required</h4>
-              <p className="text-sm text-yellow-700 mb-3">
-                You need to approve this NFT for the auction contract to transfer it when the auction is created.
+          <div className="border-t border-gray-100 pt-4 mt-2">
+            <div className="bg-cream p-4 rounded-sm border border-gold/30 mb-4">
+              <h4 className="text-sm font-bold text-charcoal mb-2 font-serif uppercase tracking-wide">Approval Required</h4>
+              <p className="text-sm text-gray-600 mb-3 font-serif italic">
+                Authorization is required to transfer this asset upon auction completion.
               </p>
               <button
                 type="button"
                 onClick={handleApproveNFT}
                 disabled={isApproving || isTxLoading}
-                className="w-full bg-yellow-600 text-white py-2 px-4 rounded-md hover:bg-yellow-700 disabled:bg-yellow-400 transition-colors"
+                className="w-full bg-gold text-white py-2 px-4 rounded-sm hover:bg-yellow-600 disabled:bg-gray-300 transition-colors font-bold uppercase tracking-wide text-sm"
               >
-                {(isApproving || isTxLoading) ? 'Approving...' : 'Approve NFT'}
+                {(isApproving || isTxLoading) ? 'Authorizing...' : 'Authorize Asset Transfer'}
               </button>
             </div>
           </div>
@@ -332,19 +332,19 @@ export default function CreateAuction({ prefillData, onClose }: CreateAuctionPro
 
         {/* Approval Status */}
         {isApproved && (
-          <div className="bg-green-50 p-3 rounded-md mb-4">
-            <p className="text-sm text-green-800">
-              ✓ NFT approved for auction
+          <div className="bg-green-50 p-3 rounded-sm mb-4 border border-british-green/20">
+            <p className="text-sm text-british-green font-bold flex items-center gap-2">
+              <span>✓</span> Asset Authorized for Auction
             </p>
           </div>
         )}
 
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+          className="w-full bg-royal-blue text-white py-3 px-4 rounded-sm hover:bg-blue-900 transition-colors font-serif font-bold uppercase tracking-widest text-lg shadow-md mt-2"
           disabled={isCreating || isApproving}
         >
-          {isCreating ? 'Creating Auction...' : 'Create Auction'}
+          {isCreating ? 'Creating Lot...' : 'Create Auction Lot'}
         </button>
       </form>
     </div>

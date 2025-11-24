@@ -15,44 +15,43 @@ export default function Navbar() {
   const isProfile = pathname === '/profile'
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
+    <header className="bg-royal-blue shadow-md border-b-4 border-gold">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-6">
-          <div className="flex items-center space-x-8">
+        <div className="flex justify-between items-center py-5">
+          <div className="flex items-center space-x-10">
             <button
               onClick={() => router.push('/')}
-              className="text-2xl font-bold text-gray-900 hover:text-blue-600 transition-colors"
+              className="text-3xl font-serif font-bold text-white hover:text-gold transition-colors tracking-wide"
             >
               Nexus Bid
-             
             </button>
-            <nav className="flex space-x-4">
+            <nav className="flex space-x-6">
               <button
                 onClick={() => router.push('/')}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`px-4 py-2 rounded-sm text-sm font-medium transition-all uppercase tracking-wider ${
                   isHome
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    ? 'text-gold border-b-2 border-gold'
+                    : 'text-gray-300 hover:text-white hover:border-b-2 hover:border-gray-400'
                 }`}
               >
                 Auctions
               </button>
               <button
                 onClick={() => router.push('/profile')}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                className={`px-4 py-2 rounded-sm text-sm font-medium transition-all uppercase tracking-wider ${
                   isProfile
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    ? 'text-gold border-b-2 border-gold'
+                    : 'text-gray-300 hover:text-white hover:border-b-2 hover:border-gray-400'
                 }`}
               >
                 Profile
               </button>
             </nav>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-6">
             <WalletConnect />
             {fees && Number(fees) > 0 && (
-              <div className="text-sm text-gray-600">
+              <div className="text-sm font-medium text-gold bg-oxford-blue px-4 py-2 rounded-sm border border-gold/30">
                 Fees: {(Number(fees) / 1e18).toFixed(4)} ETH
               </div>
             )}
