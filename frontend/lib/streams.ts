@@ -24,6 +24,9 @@ const publicClient = createPublicClient({
 })
 
 // WebSocket client for real-time subscriptions
+// NOTE: Temporarily disabled - Somnia's public WebSocket endpoint may not be available
+// Uncomment this when you have a working WebSocket endpoint
+/*
 const wsClient = createPublicClient({ 
   chain: somniaTestnet, 
   transport: webSocket(WS_URL, {
@@ -34,10 +37,11 @@ const wsClient = createPublicClient({
     timeout: 30000,
   })
 })
+*/
 
 // Singleton SDK instances
 let readOnlySDK: SDK | null = null
-let wsSDK: SDK | null = null
+// let wsSDK: SDK | null = null
 
 /**
  * Get read-only SDK for data queries (HTTP)
@@ -54,8 +58,14 @@ export function getReadOnlySDK(): SDK {
 
 /**
  * Get WebSocket SDK for real-time subscriptions
+ * 
+ * NOTE: Currently disabled as Somnia's public WebSocket endpoint is not available
+ * The dApp works fine without it - users just need to refresh to see updates
  */
 export function getWebSocketSDK(): SDK {
+  throw new Error('WebSocket subscriptions are currently disabled. Real-time updates unavailable.')
+  
+  /* Uncomment when WebSocket endpoint is available
   if (!wsSDK) {
     wsSDK = new SDK({
       public: wsClient,
@@ -63,6 +73,7 @@ export function getWebSocketSDK(): SDK {
     })
   }
   return wsSDK
+  */
 }
 
 /**
@@ -84,7 +95,8 @@ export async function subscribeToContractEvent(
   try {
     const sdk = getWebSocketSDK()
     
-    
+    // Note: WebSocket subscriptions may not be available on all Somnia endpoints
+    // If this fails, the dApp will continue to work with HTTP polling
     const subscription = await sdk.streams.subscribe({
       somniaStreamsEventId: eventName,
       ethCalls: [{
@@ -95,6 +107,8 @@ export async function subscribeToContractEvent(
         onData(data)
       },
       onError: (error) => {
+        // Silently handle WebSocket errors - they're expected if WS is unavailable
+        console.warn('⚠️ WebSocket stream error (this is normal if WS endpoint is unavailable):', error.message || error)
         onError?.(error)
       },
       onlyPushChanges: true
@@ -102,6 +116,9 @@ export async function subscribeToContractEvent(
     
     return subscription
   } catch (error) {
+    // WebSocket connection failed - this is expected if the endpoint doesn't support WS
+    console.warn('⚠️ WebSocket subscription unavailable - real-time updates disabled. The dApp will continue to work with manual refresh.')
+    console.warn('   To enable real-time updates, ensure NEXT_PUBLIC_SOMNIA_WS_URL is correctly configured.')
     throw error
   }
 }

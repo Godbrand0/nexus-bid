@@ -108,11 +108,16 @@ export default function AuctionDetailPage() {
             })
           },
           (error) => {
-            console.error('❌ Bid subscription error:', error)
+            // WebSocket errors are handled in streams.ts
+            console.warn('⚠️ Bid subscription error:', error)
           }
         )
+        
+        console.log('✅ WebSocket subscription active - you will see real-time bid updates')
       } catch (error) {
-        console.error('❌ Error setting up bid subscription:', error)
+        // WebSocket connection failed - this is normal if the endpoint doesn't support WS
+        console.warn('⚠️ Real-time updates unavailable. Please refresh the page to see new bids.')
+        // The dApp continues to work normally, users just need to refresh to see new bids
       }
     }
 
