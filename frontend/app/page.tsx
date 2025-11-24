@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useAccount } from 'wagmi'
-import { useAuction, useAuctionBids, useAccumulatedFees, useWithdrawFees } from '@/hooks/useAuctionHouse'
-import { registerSchemas, subscribeToAuctionEvents } from '@/lib/streams'
 import WalletConnect from '@/components/WalletConnect'
 import CreateAuction from '@/components/CreateAuction'
+import AuctionList from '@/components/AuctionList'
+import Profile from '@/components/Profile'
 import AuctionCard from '@/components/AuctionCard'
+import { useAuction, useAuctionBids, useAccumulatedFees } from '@/hooks/useAuctionHouse'
 
 // Type definitions
 interface Auction {
@@ -34,71 +35,33 @@ export default function Home() {
   const { address, isConnected } = useAccount()
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [auctionId, setAuctionId] = useState('')
-  const [auctions, setAuctions] = useState<any[]>([])
-
-  const { auction, isLoading: isLoadingAuction } = useAuction(auctionId)
-  const { bids, isLoading: isLoadingBids } = useAuctionBids(auctionId)
-  const { fees, isLoading: isLoadingFees } = useAccumulatedFees()
-  const { withdrawFees } = useWithdrawFees()
-
-  // Initialize Somnia Data Streams schemas (server-side only)
+  const [searchAuctionId, setSearchAuctionId] = useState('')
+  const [currentView, setCurrentView] = useState<'home' | 'profile'>('home')
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid')
+  const [mounted, setMounted] = useState(false)
+  
+  // Use wagmi hooks for direct contract interaction - only when searchAuctionId is set
+  const { auction, isLoading: auctionLoading, error: auctionError } = useAuction(searchAuctionId)
+  const { bids, isLoading: bidsLoading } = useAuctionBids(searchAuctionId)
+  const { fees, isLoading: feesLoading } = useAccumulatedFees()
+  
+  // Wait for hydration
   useEffect(() => {
-    // Only register schemas on server side
-    if (typeof window === 'undefined' && isConnected) {
-      registerSchemas().catch(console.error)
+    setMounted(true)
+  }, [])
+
+  const handleLoadAuction = () => {
+    if (auctionId && auctionId.trim() !== '') {
+      setSearchAuctionId(auctionId)
     }
-  }, [isConnected])
+  }
 
-  // Subscribe to real-time events
-  useEffect(() => {
-    if (!isConnected) return
-
-    let subscriptions: { unsubscribe?: () => void }[] = []
-
-    const setupSubscriptions = async () => {
-      try {
-        const sub1 = await subscribeToAuctionEvents('AuctionCreated', (data) => {
-          console.log('New auction created:', data)
-          // Update auctions list
-        })
-        if (sub1) subscriptions.push(sub1)
-
-        const sub2 = await subscribeToAuctionEvents('BidPlaced', (data) => {
-          console.log('New bid placed:', data)
-          // Update auction data
-        })
-        if (sub2) subscriptions.push(sub2)
-
-        const sub3 = await subscribeToAuctionEvents('AuctionFinalized', (data) => {
-          console.log('Auction finalized:', data)
-          // Update auction status
-        })
-        if (sub3) subscriptions.push(sub3)
-      } catch (error) {
-        console.error('Error setting up subscriptions:', error)
-      }
-    }
-
-    setupSubscriptions()
-
-    return () => {
-      // Cleanup subscriptions
-      subscriptions.forEach(sub => {
-        if (sub && sub.unsubscribe) {
-          sub.unsubscribe()
-        }
-      })
-    }
-  }, [isConnected])
-
-  const handleWithdrawFees = async () => {
-    try {
-      await withdrawFees()
-      alert('Fees withdrawn successfully!')
-    } catch (error) {
-      console.error('Error withdrawing fees:', error)
-      alert('Failed to withdraw fees')
-    }
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    )
   }
 
   return (
@@ -106,16 +69,37 @@ export default function Home() {
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <h1 className="text-2xl font-bold text-gray-900">Nexus Auction House</h1>
+            <div className="flex items-center space-x-8">
+              <h1 className="text-2xl font-bold text-gray-900">Nexus Auction House</h1>
+              <nav className="flex space-x-4">
+                <button
+                  onClick={() => setCurrentView('home')}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    currentView === 'home'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  Auctions
+                </button>
+                <button
+                  onClick={() => setCurrentView('profile')}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    currentView === 'profile'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  Profile
+                </button>
+              </nav>
+            </div>
             <div className="flex items-center space-x-4">
               <WalletConnect />
               {fees && Number(fees) > 0 && (
-                <button
-                  onClick={handleWithdrawFees}
-                  className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700"
-                >
-                  Withdraw Fees ({parseFloat(fees.toString()) / 1e18} ETH)
-                </button>
+                <div className="text-sm text-gray-600">
+                  Fees: {(Number(fees) / 1e18).toFixed(4)} ETH
+                </div>
               )}
             </div>
           </div>
@@ -132,21 +116,27 @@ export default function Home() {
               Connect your wallet to start creating and bidding on auctions
             </p>
           </div>
-        ) : (
+        ) : currentView === 'home' ? (
           <div className="space-y-8">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold text-gray-900">Auctions</h2>
-              <button
-                onClick={() => setShowCreateForm(!showCreateForm)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-              >
-                {showCreateForm ? 'Hide Form' : 'Create Auction'}
-              </button>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                  className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors"
+                >
+                  {viewMode === 'grid' ? 'List View' : 'Grid View'}
+                </button>
+                <button
+                  onClick={() => setShowCreateForm(!showCreateForm)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  {showCreateForm ? 'Hide Form' : 'Create Auction'}
+                </button>
+              </div>
             </div>
 
-            {showCreateForm && (
-              <CreateAuction />
-            )}
+            {showCreateForm && <CreateAuction />}
 
             <div className="mb-6">
               <label htmlFor="auctionId" className="block text-sm font-medium text-gray-700 mb-1">
@@ -156,22 +146,37 @@ export default function Home() {
                 <input
                   id="auctionId"
                   type="text"
-                  placeholder="Enter auction ID..."
+                  placeholder="0x..."
                   value={auctionId}
-                  onChange={(e) => setAuctionId(e.target.value)}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={(e) => {
+                    setAuctionId(e.target.value)
+                    if (e.target.value === '') {
+                      setSearchAuctionId('')
+                    }
+                  }}
+                  className="flex-1 px-3 py-2 border border-gray-300 text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <button
-                  onClick={() => auctionId && setAuctions([auction])}
-                  disabled={!auctionId}
-                  className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  onClick={handleLoadAuction}
+                  disabled={!auctionId || auctionLoading}
+                  className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                 >
-                  Load Auction
+                  {auctionLoading ? 'Loading...' : 'Load Auction'}
                 </button>
               </div>
+              {auctionError && (
+                <div className="mt-2 text-sm text-red-600">
+                  Error loading auction: {auctionError.message}
+                </div>
+              )}
             </div>
 
-            {auctionId && auction && (
+            <AuctionList
+              currentAddress={address}
+              viewMode={viewMode}
+            />
+
+            {auction && (
               <AuctionCard
                 auction={{
                   auctionId: auction[0] as string,
@@ -186,19 +191,14 @@ export default function Home() {
                   isActive: auction[9] as boolean,
                   isFinalized: auction[10] as boolean
                 }}
-                bids={(bids as unknown as Bid[]) || []}
+                bids={bids as any[] || []}
                 currentAddress={address}
-                isSeller={auction[3].toLowerCase() === address?.toLowerCase()}
+                isSeller={(auction[3] as string)?.toLowerCase() === address?.toLowerCase()}
               />
             )}
-
-            {auctions.length === 0 && !auctionId && (
-              <div className="text-center py-12">
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No auctions found</h3>
-                <p className="text-gray-600">Create a new auction or load an existing one by ID</p>
-              </div>
-            )}
           </div>
+        ) : (
+          <Profile />
         )}
       </main>
     </div>

@@ -1,265 +1,194 @@
 import { SDK } from '@somnia-chain/streams'
-import { createPublicClient, createWalletClient, http, webSocket } from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
+import { createPublicClient, http, webSocket } from 'viem'
 import { somniaTestnet } from 'viem/chains'
-import { AUCTION_SCHEMA_ID, AUCTION_SCHEMA, BID_SCHEMA_ID, BID_SCHEMA, AUCTION_EVENTS } from '@/contracts'
 
-// Public client for reading and subscribing
+/**
+ * Somnia Data Streams Configuration (Client-Side)
+ * 
+ * This file provides CLIENT-SIDE stream functionality for:
+ * - Subscribing to auction events
+ * - Reading auction/bid data
+ * 
+ * NOTE: Publishing data and schema registration require server-side
+ * operations (see /app/api routes for those)
+ */
+
+// Environment variables
+const RPC_URL = process.env.NEXT_PUBLIC_SOMNIA_RPC_URL || 'https://dream-rpc.somnia.network'
+const WS_URL = process.env.NEXT_PUBLIC_SOMNIA_WS_URL || 'wss://dream-rpc.somnia.network/ws'
+
+// Public HTTP client for reading data
 const publicClient = createPublicClient({ 
   chain: somniaTestnet, 
-  transport: http(process.env.NEXT_PUBLIC_SOMNIA_RPC_URL || 'https://dream-rpc.somnia.network') 
+  transport: http(RPC_URL) 
 })
 
 // WebSocket client for real-time subscriptions
 const wsClient = createPublicClient({ 
   chain: somniaTestnet, 
-  transport: webSocket(process.env.NEXT_PUBLIC_SOMNIA_WS_URL || 'wss://dream-rpc.somnia.network') 
+  transport: webSocket(WS_URL, {
+    reconnect: {
+      attempts: 5,
+      delay: 1000,
+    },
+    timeout: 30000,
+  })
 })
 
-// SDK factory functions for different contexts
-let serverSDK: SDK | null = null
+// Singleton SDK instances
 let readOnlySDK: SDK | null = null
+let wsSDK: SDK | null = null
 
-// Get server-side SDK with wallet (for backend operations)
-export function getServerSDK() {
-  if (!serverSDK) {
-    if (!process.env.PRIVATE_KEY) {
-      throw new Error('PRIVATE_KEY not set in environment variables')
-    }
-    
-    const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`)
-    const walletClient = createWalletClient({
-      chain: somniaTestnet,
-      account,
-      transport: http(process.env.NEXT_PUBLIC_SOMNIA_RPC_URL || 'https://dream-rpc.somnia.network')
-    })
-    
-    serverSDK = new SDK({
-      public: publicClient,
-      wallet: walletClient
-    })
-  }
-  
-  return serverSDK
-}
-
-// Get read-only SDK without wallet (for client-side operations)
-export function getReadOnlySDK() {
+/**
+ * Get read-only SDK for data queries (HTTP)
+ */
+export function getReadOnlySDK(): SDK {
   if (!readOnlySDK) {
     readOnlySDK = new SDK({
       public: publicClient,
       wallet: undefined
     })
   }
-  
   return readOnlySDK
 }
 
-// Legacy export for backward compatibility (read-only)
-export const sdk = getReadOnlySDK()
-
-// Schema registration (uses server SDK with wallet)
-export async function registerSchemas() {
-  try {
-    const serverSDK = getServerSDK()
-    
-    // Register auction schema
-    const auctionSchemaTx = await serverSDK.streams.registerDataSchemas([
-      {
-        id: AUCTION_SCHEMA_ID,
-        schema: AUCTION_SCHEMA,
-        parentSchemaId: '0x0000000000000000000000000000000000000000000000000000000000000000000'
-      }
-    ], true)
-
-    console.log('Auction schema registered:', auctionSchemaTx)
-
-    // Register bid schema
-    const bidSchemaTx = await serverSDK.streams.registerDataSchemas([
-      {
-        id: BID_SCHEMA_ID,
-        schema: BID_SCHEMA,
-        parentSchemaId: '0x0000000000000000000000000000000000000000000000000000000000000000000'
-      }
-    ], true)
-
-    console.log('Bid schema registered:', bidSchemaTx)
-
-    // Register event schemas
-    await serverSDK.streams.registerEventSchemas(
-      Object.values(AUCTION_EVENTS),
-      [
-        {
-          params: [{ name: 'auctionId', paramType: 'bytes32', isIndexed: true }],
-          eventTopic: 'AuctionCreated(bytes32 indexed auctionId, address indexed seller, address nftContract, uint256 tokenId, uint256 startingPrice, uint64 endTime)'
-        },
-        {
-          params: [{ name: 'auctionId', paramType: 'bytes32', isIndexed: true }],
-          eventTopic: 'BidPlaced(bytes32 indexed auctionId, address indexed bidder, uint256 amount, uint64 timestamp)'
-        },
-        {
-          params: [{ name: 'auctionId', paramType: 'bytes32', isIndexed: true }],
-          eventTopic: 'AuctionFinalized(bytes32 indexed auctionId, address indexed winner, uint256 winningBid, uint256 platformFee)'
-        },
-        {
-          params: [{ name: 'auctionId', paramType: 'bytes32', isIndexed: true }],
-          eventTopic: 'BidRefunded(bytes32 indexed auctionId, address indexed bidder, uint256 amount)'
-        }
-      ]
-    )
-
-    console.log('Event schemas registered')
-  } catch (error) {
-    console.error('Error registering schemas:', error)
+/**
+ * Get WebSocket SDK for real-time subscriptions
+ */
+export function getWebSocketSDK(): SDK {
+  if (!wsSDK) {
+    wsSDK = new SDK({
+      public: wsClient,
+      wallet: undefined
+    })
   }
+  return wsSDK
 }
 
-// Publish auction data to streams (uses server SDK with wallet)
-export async function publishAuctionData(auctionData: any) {
-  try {
-    const serverSDK = getServerSDK()
-    const schemaId = await serverSDK.streams.idToSchemaId(AUCTION_SCHEMA_ID)
-    
-    if (!schemaId) {
-      throw new Error('Failed to get schema ID for auction')
-    }
-    
-    const tx = await serverSDK.streams.set([{
-      id: auctionData.auctionId as `0x${string}`,
-      schemaId: schemaId,
-      data: auctionData
-    }])
-    
-    console.log('Auction data published:', tx)
-    return tx
-  } catch (error) {
-    console.error('Error publishing auction data:', error)
-    throw error
-  }
-}
-
-// Publish bid data to streams (uses server SDK with wallet)
-export async function publishBidData(bidData: any) {
-  try {
-    const serverSDK = getServerSDK()
-    const schemaId = await serverSDK.streams.idToSchemaId(BID_SCHEMA_ID)
-    
-    if (!schemaId) {
-      throw new Error('Failed to get schema ID for bid')
-    }
-    
-    const tx = await serverSDK.streams.set([{
-      id: `${bidData.auctionId}-${bidData.bidder}` as `0x${string}`,
-      schemaId: schemaId,
-      data: bidData
-    }])
-    
-    console.log('Bid data published:', tx)
-    return tx
-  } catch (error) {
-    console.error('Error publishing bid data:', error)
-    throw error
-  }
-}
-
-// Emit auction events (uses server SDK with wallet)
-export async function emitAuctionEvent(eventType: string, data: any) {
-  try {
-    const serverSDK = getServerSDK()
-    
-    const tx = await serverSDK.streams.emitEvents([{
-      id: eventType,
-      argumentTopics: [data.auctionId as `0x${string}`],
-      data: '0x'
-    }])
-    
-    console.log('Auction event emitted:', tx)
-    return tx
-  } catch (error) {
-    console.error('Error emitting auction event:', error)
-    throw error
-  }
-}
-
-// Subscribe to auction events (uses read-only SDK)
-export async function subscribeToAuctionEvents(
-  eventType: string,
+/**
+ * Subscribe to contract events via WebSocket
+ * 
+ * @param contractAddress - Address of the contract to watch
+ * @param eventName - Name of the event (e.g., 'BidPlaced')
+ * @param onData - Callback for new events
+ * @param onError - Optional error callback
+ * @param args - Optional event filter arguments
+ */
+export async function subscribeToContractEvent(
+  contractAddress: `0x${string}`,
+  eventName: string,
   onData: (data: any) => void,
-  onError?: (error: any) => void
+  onError?: (error: any) => void,
+  args?: Record<string, any>
 ) {
   try {
-    const readOnlySDK = getReadOnlySDK()
-    const subscription = await readOnlySDK.streams.subscribe({
-      somniaStreamsEventId: eventType,
-      ethCalls: [],
-      onData,
-      onError,
+    const sdk = getWebSocketSDK()
+    
+    
+    const subscription = await sdk.streams.subscribe({
+      somniaStreamsEventId: eventName,
+      ethCalls: [{
+        to: contractAddress,
+        data: '0x'
+      }],
+      onData: (data) => {
+        onData(data)
+      },
+      onError: (error) => {
+        onError?.(error)
+      },
       onlyPushChanges: true
     })
     
-    console.log(`Subscribed to ${eventType} with ID:`, subscription?.subscriptionId)
     return subscription
   } catch (error) {
-    console.error(`Error subscribing to ${eventType}:`, error)
     throw error
   }
 }
 
-// Get auction data from streams (uses read-only SDK)
-export async function getAuctionData(auctionId: string) {
-  try {
-    const readOnlySDK = getReadOnlySDK()
-    const schemaId = await readOnlySDK.streams.idToSchemaId(AUCTION_SCHEMA_ID)
-    
-    if (!schemaId) {
-      throw new Error('Failed to get schema ID for auction')
-    }
-    
-    const data = await readOnlySDK.streams.getByKey(
-      schemaId,
-      '0x0000000000000000000000000000000000000000000' as `0x${string}`,
-      auctionId as `0x${string}`
-    )
-    return data
-  } catch (error) {
-    console.error('Error getting auction data:', error)
-    return null
+/**
+ * Subscribe to auction events (BidPlaced, AuctionCreated, etc.)
+ * 
+ * @param auctionHouseAddress - Address of the AuctionHouse contract
+ * @param eventType - Event name ('BidPlaced', 'AuctionCreated', etc.)
+ * @param onData - Callback for new events
+ * @param onError - Optional error callback
+ * @param auctionId - Optional: filter by specific auction ID
+ */
+export async function subscribeToAuctionEvents(
+  auctionHouseAddress: `0x${string}`,
+  eventType: 'BidPlaced' | 'AuctionCreated' | 'AuctionFinalized' | 'BidRefunded',
+  onData: (data: any) => void,
+  onError?: (error: any) => void,
+  auctionId?: string
+) {
+  return subscribeToContractEvent(
+    auctionHouseAddress,
+    eventType,
+    onData,
+    onError,
+    auctionId ? { auctionId } : undefined
+  )
+}
+
+/**
+ * Subscribe to bids for a specific auction
+ * 
+ * @param auctionHouseAddress - Address of the AuctionHouse contract
+ * @param auctionId - The auction ID to watch
+ * @param onBid - Callback when new bid is placed
+ * @param onError - Optional error callback
+ */
+export async function subscribeToBids(
+  auctionHouseAddress: `0x${string}`,
+  auctionId: string,
+  onBid: (bidData: {
+    auctionId: string
+    bidder: string
+    amount: bigint
+    timestamp: bigint
+  }) => void,
+  onError?: (error: any) => void
+) {
+  return subscribeToAuctionEvents(
+    auctionHouseAddress,
+    'BidPlaced',
+    (data) => {
+      // Parse the event data
+      if (data.args && data.args.auctionId === auctionId) {
+        onBid({
+          auctionId: data.args.auctionId,
+          bidder: data.args.bidder,
+          amount: data.args.amount,
+          timestamp: data.args.timestamp
+        })
+      }
+    },
+    onError,
+    auctionId
+  )
+}
+
+/**
+ * Unsubscribe from a stream
+ */
+export function unsubscribe(subscription: any) {
+  if (subscription && typeof subscription.unsubscribe === 'function') {
+    subscription.unsubscribe()
   }
 }
 
-// Get bid data from streams (uses read-only SDK)
-export async function getBidData(auctionId: string, bidder: string) {
-  try {
-    const readOnlySDK = getReadOnlySDK()
-    const schemaId = await readOnlySDK.streams.idToSchemaId(BID_SCHEMA_ID)
-    
-    if (!schemaId) {
-      throw new Error('Failed to get schema ID for bid')
-    }
-    
-    const data = await readOnlySDK.streams.getByKey(
-      schemaId,
-      '0x0000000000000000000000000000000000000000000' as `0x${string}`,
-      `${auctionId}-${bidder}` as `0x${string}`
-    )
-    return data
-  } catch (error) {
-    console.error('Error getting bid data:', error)
-    return null
-  }
-}
+// Legacy export for backward compatibility
+export const sdk = getReadOnlySDK()
 
-// Initialize wallet client for streams
-export function initializeWalletClient(privateKey: string) {
-  const account = privateKeyToAccount(privateKey as `0x${string}`)
-  const walletClient = createWalletClient({ 
-    chain: somniaTestnet, 
-    account, 
-    transport: http(process.env.NEXT_PUBLIC_SOMNIA_RPC_URL || 'https://dream-rpc.somnia.network') 
-  })
-  
-  return new SDK({
-    public: publicClient,
-    wallet: walletClient
-  })
-}
+/**
+ * NOTE: The following functions require server-side execution
+ * They should be called from API routes, not from client components
+ * 
+ * - registerSchemas() - Register data schemas (requires wallet)
+ * - publishAuctionData() - Publish auction data (requires wallet)
+ * - publishBidData() - Publish bid data (requires wallet)
+ * - emitAuctionEvent() - Emit custom events (requires wallet)
+ * 
+ * See /app/api/streams/* for server-side implementations
+ */

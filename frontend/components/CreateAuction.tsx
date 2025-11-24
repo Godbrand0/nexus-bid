@@ -1,69 +1,239 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useCreateAuction } from '@/hooks/useAuctionHouse'
-import { publishAuctionData, emitAuctionEvent } from '@/lib/streams'
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, usePublicClient } from 'wagmi'
 
-export default function CreateAuction() {
-  const [nftContract, setNftContract] = useState('')
-  const [tokenId, setTokenId] = useState('')
+interface CreateAuctionProps {
+  prefillData?: {
+    nftContract: string
+    tokenId: string
+  }
+  onClose?: () => void
+}
+
+export default function CreateAuction({ prefillData, onClose }: CreateAuctionProps) {
+  const [nftContract, setNftContract] = useState(prefillData?.nftContract || '')
+  const [tokenId, setTokenId] = useState(prefillData?.tokenId || '')
   const [startingPrice, setStartingPrice] = useState('')
-  const [duration, setDuration] = useState('86400') // 24 hours in seconds
+  const [duration, setDuration] = useState('3600') // 1 hour default
   const [isCreating, setIsCreating] = useState(false)
+  const [isApproving, setIsApproving] = useState(false)
+  const [isApproved, setIsApproved] = useState(false)
 
   const { createAuction } = useCreateAuction()
+  const { address: currentAddress } = useAccount()
+  const publicClient = usePublicClient()
+  const { data: txData, isPending: isTxLoading, writeContract } = useWriteContract()
+  const { data: receipt, isLoading: isReceiptLoading, isSuccess: isReceiptSuccess } = useWaitForTransactionReceipt({
+    hash: txData,
+  })
 
-  const handleCreateAuction = async () => {
+  // Check NFT ownership directly from blockchain
+  const checkNFTOwnership = async () => {
+    console.log('Checking NFT ownership for:', { nftContract, tokenId, currentAddress })
+    
+    if (!nftContract || !tokenId || !currentAddress || !publicClient) return false
+    
+    try {
+      const owner = await publicClient.readContract({
+        address: nftContract as `0x${string}`,
+        abi: [
+          {
+            name: 'ownerOf',
+            type: 'function',
+            stateMutability: 'view',
+            inputs: [{ name: 'tokenId', type: 'uint256' }],
+            outputs: [{ name: 'owner', type: 'address' }],
+          },
+        ],
+        functionName: 'ownerOf',
+        args: [BigInt(tokenId)],
+      })
+      
+      const isOwner = owner.toLowerCase() === currentAddress.toLowerCase()
+      console.log('NFT ownership check result:', { owner, currentAddress, isOwner })
+      return isOwner
+    } catch (error) {
+      console.error('Error checking NFT ownership:', error)
+      return false
+    }
+  }
+
+  // ERC721 ABI for approve function
+  const ERC721_ABI = [
+    {
+      inputs: [
+        { internalType: 'address', name: 'to', type: 'address' },
+        { internalType: 'uint256', name: 'tokenId', type: 'uint256' }
+      ],
+      name: 'approve',
+      outputs: [
+        { internalType: 'bool', name: '', type: 'bool' }
+      ],
+      stateMutability: 'nonpayable',
+      type: 'function'
+    }
+  ] as const
+
+  // Approve NFT for auction
+  const handleApproveNFT = async () => {
+    console.log('Starting NFT approval process...')
+    
+    if (!nftContract || !tokenId || !currentAddress) {
+      console.error('Missing required fields for approval:', { nftContract, tokenId, currentAddress })
+      alert('Please enter NFT contract and token ID, and connect your wallet')
+      return
+    }
+
+    const auctionHouseAddress = process.env.NEXT_PUBLIC_AUCTION_HOUSE_ADDRESS
+    console.log('Auction House Address:', auctionHouseAddress)
+    
+    if (!auctionHouseAddress) {
+      console.error('Auction House address is not defined in environment variables')
+      alert('Auction House address is not configured. Please contact support.')
+      return
+    }
+
+    setIsApproving(true)
+    try {
+      console.log('Approving NFT with params:', {
+        nftContract,
+        tokenId: BigInt(tokenId),
+        auctionHouseAddress
+      })
+      
+      // Use wagmi to approve the NFT directly from the client
+      writeContract({
+        address: nftContract as `0x${string}`,
+        abi: ERC721_ABI,
+        functionName: 'approve',
+        args: [
+          auctionHouseAddress as `0x${string}`,
+          BigInt(tokenId)
+        ]
+      })
+    } catch (error) {
+      console.error('Error approving NFT:', error)
+      alert('Failed to approve NFT')
+    } finally {
+      setIsApproving(false)
+    }
+  }
+
+  // Handle transaction success
+  useEffect(() => {
+    if (isReceiptSuccess && receipt) {
+      console.log('Approval transaction successful:', receipt)
+      setIsApproved(true)
+      alert('NFT approved successfully!')
+    }
+  }, [isReceiptSuccess, receipt])
+
+  // Check if NFT is already approved on component mount or when NFT details change
+  useEffect(() => {
+    const checkApproval = async () => {
+      if (nftContract && tokenId && currentAddress) {
+        try {
+          console.log('Checking if NFT is already approved...')
+          const response = await fetch('/api/nft/approve', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contract: nftContract,
+              tokenId,
+              userAddress: currentAddress,
+              auctionHouseAddress: process.env.NEXT_PUBLIC_AUCTION_HOUSE_ADDRESS
+            })
+          })
+          
+          const data = await response.json()
+          console.log('Approval check result:', data)
+          
+          if (data.success && data.alreadyApproved) {
+            setIsApproved(true)
+          }
+        } catch (error) {
+          console.error('Error checking NFT approval:', error)
+        }
+      }
+    }
+    
+    checkApproval()
+  }, [nftContract, tokenId, currentAddress])
+
+  const handleCreateAuction = async (e: React.FormEvent) => {
+    e.preventDefault()
+    console.log('Starting auction creation with params:', {
+      nftContract,
+      tokenId,
+      startingPrice,
+      duration,
+      isApproved
+    })
+    
     if (!nftContract || !tokenId || !startingPrice || !duration) {
+      console.error('Missing required fields:', { nftContract, tokenId, startingPrice, duration })
       alert('Please fill in all fields')
       return
     }
 
     if (parseFloat(startingPrice) <= 0) {
+      console.error('Invalid starting price:', startingPrice)
       alert('Starting price must be greater than 0')
       return
     }
 
     if (parseInt(duration) < 300 || parseInt(duration) > 2592000) {
+      console.error('Invalid duration:', duration)
       alert('Duration must be between 5 minutes and 30 days')
+      return
+    }
+
+    // Check if user owns the NFT
+    const ownsNFT = await checkNFTOwnership()
+    if (!ownsNFT) {
+      console.error('User does not own the NFT')
+      alert('You do not own this NFT')
+      return
+    }
+
+    // Check if NFT is approved
+    if (!isApproved) {
+      console.error('NFT is not approved')
+      alert('Please approve the NFT first')
       return
     }
 
     setIsCreating(true)
     try {
-      const tx = await createAuction(
+      console.log('Calling createAuction contract function...')
+      // Contract will emit AuctionCreated event which Somnia Data Streams will capture
+      const auctionId = await createAuction(
         nftContract,
         BigInt(tokenId),
         startingPrice,
         parseInt(duration)
       )
 
-      if (tx !== null && tx !== undefined) {
-        // Publish to Somnia Data Streams
-        const auctionData = {
-          auctionId: tx,
-          nftContract,
-          tokenId: BigInt(tokenId),
-          seller: '', // Will be filled by contract
-          startingPrice: BigInt(parseFloat(startingPrice) * 1e18),
-          currentBid: BigInt(0),
-          highestBidder: '0x0000000000000000000000000000000000000000000',
-          startTime: BigInt(Math.floor(Date.now() / 1000)),
-          endTime: BigInt(Math.floor(Date.now() / 1000) + parseInt(duration)),
-          isActive: true,
-          isFinalized: false
-        }
+      console.log('Auction created with ID:', auctionId)
 
-        await publishAuctionData(auctionData)
-        await emitAuctionEvent('AuctionCreated', { auctionId: tx })
-
+      if (auctionId !== null && auctionId !== undefined) {
         // Reset form
         setNftContract('')
         setTokenId('')
         setStartingPrice('')
-        setDuration('86400')
+        setDuration('3600')
+        setIsApproved(false)
 
         alert('Auction created successfully!')
+        
+        // Close modal if onClose function is provided
+        if (onClose) {
+          onClose()
+        }
       }
     } catch (error) {
       console.error('Error creating auction:', error)
@@ -74,87 +244,109 @@ export default function CreateAuction() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-      <h2 className="text-xl font-bold mb-6 text-gray-900">Create New Auction</h2>
-      
-      <div className="space-y-4">
+    <div className="bg-white rounded-lg shadow p-6">
+      <h3 className="text-lg font-semibold text-black mb-4">Create New Auction</h3>
+      <form onSubmit={handleCreateAuction} className="space-y-4">
         <div>
-          <label htmlFor="nftContract" className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             NFT Contract Address
           </label>
           <input
-            id="nftContract"
             type="text"
-            placeholder="0x..."
             value={nftContract}
             onChange={(e) => setNftContract(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isCreating}
+            placeholder="0x..."
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isCreating || isApproving}
           />
         </div>
 
         <div>
-          <label htmlFor="tokenId" className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Token ID
           </label>
           <input
-            id="tokenId"
-            type="number"
-            placeholder="1"
+            type="text"
             value={tokenId}
             onChange={(e) => setTokenId(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isCreating}
+            placeholder="1"
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isCreating || isApproving}
           />
         </div>
 
         <div>
-          <label htmlFor="startingPrice" className="block text-sm font-medium text-gray-700 mb-1">
-            Starting Price (ETH)
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Starting Price (STT)
           </label>
           <input
-            id="startingPrice"
-            type="number"
-            step="0.01"
-            placeholder="0.1"
+            type="text"
             value={startingPrice}
             onChange={(e) => setStartingPrice(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isCreating}
+            placeholder="1.0"
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isCreating || isApproving}
           />
         </div>
 
         <div>
-          <label htmlFor="duration" className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Duration (seconds)
           </label>
           <select
-            id="duration"
             value={duration}
             onChange={(e) => setDuration(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isCreating}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isCreating || isApproving}
           >
-            <option value="300">5 minutes</option>
-            <option value="900">15 minutes</option>
-            <option value="1800">30 minutes</option>
             <option value="3600">1 hour</option>
-            <option value="7200">2 hours</option>
+            <option value="21600">6 hours</option>
             <option value="86400">24 hours</option>
-            <option value="172800">48 hours</option>
+            <option value="259200">3 days</option>
             <option value="604800">7 days</option>
-            <option value="2592000">30 days</option>
           </select>
         </div>
 
+        {/* NFT Approval Section */}
+        {nftContract && tokenId && !isApproved && (
+          <div className="border-t pt-4">
+            <div className="bg-yellow-50 p-4 rounded-md mb-4">
+              <h4 className="text-sm font-medium text-yellow-800 mb-2">NFT Approval Required</h4>
+              <p className="text-sm text-yellow-700 mb-3">
+                You need to approve this NFT for the auction contract to transfer it when the auction is created.
+              </p>
+              <button
+                type="button"
+                onClick={handleApproveNFT}
+                disabled={isApproving || isTxLoading}
+                className="w-full bg-yellow-600 text-white py-2 px-4 rounded-md hover:bg-yellow-700 disabled:bg-yellow-400 transition-colors"
+              >
+                {(isApproving || isTxLoading) ? 'Approving...' : 'Approve NFT'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Approval Status */}
+        {isApproved && (
+          <div className="bg-green-50 p-3 rounded-md mb-4">
+            <p className="text-sm text-green-800">
+              ✓ NFT approved for auction
+            </p>
+          </div>
+        )}
+
         <button
-          onClick={handleCreateAuction}
-          disabled={isCreating || !nftContract || !tokenId || !startingPrice || !duration}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          type="submit"
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
+          disabled={isCreating || isApproving}
         >
           {isCreating ? 'Creating Auction...' : 'Create Auction'}
         </button>
-      </div>
+      </form>
     </div>
   )
 }

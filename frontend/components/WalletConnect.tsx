@@ -1,39 +1,32 @@
 'use client'
 
 import { ConnectButton } from '@rainbow-me/rainbowkit'
-import { useAccount, useBalance } from 'wagmi'
-import { RainbowKitProvider } from '@rainbow-me/rainbowkit'
+import { useEffect, useState } from 'react'
 
 export default function WalletConnect() {
-  const { address, isConnected } = useAccount()
-  const { data: balance } = useBalance({ address })
+  const [mounted, setMounted] = useState(false)
 
-  return (
-    <RainbowKitProvider>
-      <div className="flex items-center space-x-4">
-        {isConnected && address ? (
-          <div className="flex items-center space-x-3">
-            <div className="text-right">
-              <p className="text-sm font-medium text-gray-900">
-                {address.slice(0, 6)}...{address.slice(-4)}
-              </p>
-              {balance && (
-                <p className="text-sm text-gray-600">
-                  {parseFloat(balance.formatted).toFixed(4)} ETH
-                </p>
-              )}
-            </div>
-          </div>
-        ) : (
-          <p className="text-sm text-gray-600">Connect your wallet to get started</p>
-        )}
-      
-        <ConnectButton
-          chainStatus="icon"
-          showBalance={false}
-          accountStatus="address"
-        />
-      </div>
-    </RainbowKitProvider>
-  )
+  useEffect(() => {
+    // Only run WalletConnect in browser environment
+    const isBrowser = typeof window !== 'undefined'
+    const isIndexedDBAvailable = 'indexedDB' in window
+    
+    console.log('Environment check:', { isBrowser, isIndexedDBAvailable })
+    
+    if (isBrowser && isIndexedDBAvailable) {
+      setMounted(true)
+    } else {
+      console.warn('WalletConnect requires browser environment with IndexedDB')
+      setMounted(false)
+    }
+  }, [])
+
+  // Prevent rendering until client-side hydration is complete
+  if (!mounted) {
+    return (
+      <div className="h-10 w-32 bg-gray-200 rounded-lg animate-pulse"></div>
+    )
+  }
+
+  return <ConnectButton />
 }
