@@ -55,7 +55,7 @@ export default function MyNFTs() {
         </div>
         
         {/* Loading Skeletons */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(8)].map((_, i) => (
             <div key={i} className="animate-pulse">
               <div className="bg-gray-200 rounded-lg aspect-square mb-3"></div>
@@ -155,7 +155,7 @@ export default function MyNFTs() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {nfts.map((nft) => (
               <NFTCard
                 key={`${nft.contractAddress}-${nft.tokenId}`}
@@ -170,8 +170,8 @@ export default function MyNFTs() {
 
       {/* Create Auction Modal */}
       {showCreateAuction && auctionNFT && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-transparent bg-blur flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-gray-900">Create Auction</h3>
               <button

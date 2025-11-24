@@ -241,6 +241,37 @@ export default function AuctionDetailPage() {
     }
   }
 
+  const handleImportNFT = async () => {
+    try {
+      // Check if wallet supports watchAsset
+      if (typeof window.ethereum === 'undefined') {
+        alert('Please install MetaMask or another Web3 wallet')
+        return
+      }
+
+      // Request to add NFT to wallet
+      const wasAdded = await window.ethereum.request({
+        method: 'wallet_watchAsset',
+        params: {
+          type: 'ERC721',
+          options: {
+            address: localAuction.nftContract,
+            tokenId: localAuction.tokenId.toString(),
+          },
+        },
+      })
+
+      if (wasAdded) {
+        alert('NFT imported successfully! Check your wallet.')
+      } else {
+        alert('NFT import was cancelled')
+      }
+    } catch (error) {
+      console.error('Error importing NFT:', error)
+      alert('Failed to import NFT: ' + (error as Error).message)
+    }
+  }
+
   const formatTimeRemaining = (endTime: bigint) => {
     const now = Math.floor(Date.now() / 1000)
     const end = Number(endTime)
@@ -379,8 +410,8 @@ export default function AuctionDetailPage() {
                         </button>
                       </div>
                     </div>
-                    <div className="flex justify-between items-center py-2 border-b border-gray-200">
-                      <span className="text-gray-600">Token ID</span>
+                    <div className="flex justify-between text-gray-600 items-center py-2 border-b border-gray-200">
+                      <span className="">Token ID</span>
                       <span className="font-bold text-lg">#{localAuction.tokenId.toString()}</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b border-gray-200">
@@ -395,7 +426,7 @@ export default function AuctionDetailPage() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Starting Price</span>
-                      <span className="font-medium text-lg">{formatEther(localAuction.startingPrice)} STT</span>
+                      <span className="font-medium text-lg text-gray-600">{formatEther(localAuction.startingPrice)} STT</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Current Bid</span>
@@ -403,7 +434,7 @@ export default function AuctionDetailPage() {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">Highest Bidder</span>
-                      <span className="font-mono text-sm">
+                      <span className="font-mono text-sm text-gray-600">
                         {localAuction.highestBidder === '0x0000000000000000000000000000000000000000' 
                           ? 'No bids yet' 
                           : `${localAuction.highestBidder.slice(0, 10)}...${localAuction.highestBidder.slice(-8)}`
@@ -449,6 +480,18 @@ export default function AuctionDetailPage() {
                       className="w-full bg-purple-600 text-white py-4 px-6 rounded-xl hover:bg-purple-700 transition-all shadow-lg font-bold text-lg"
                     >
                       Finalize Auction
+                    </button>
+                  )}
+
+                  {localAuction.isFinalized && isHighestBidder && (
+                    <button
+                      onClick={handleImportNFT}
+                      className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-4 px-6 rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl font-bold text-lg flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Import NFT to Wallet
                     </button>
                   )}
 
@@ -517,7 +560,7 @@ export default function AuctionDetailPage() {
 
       {/* Bid Modal */}
       {showBidModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-transparent bg-blur flex items-center justify-center p-4 z-50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all">
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
               <h3 className="text-2xl font-bold">Place Your Bid</h3>
@@ -535,7 +578,7 @@ export default function AuctionDetailPage() {
                     value={bidAmount}
                     onChange={(e) => setBidAmount(e.target.value)}
                     placeholder="0.0"
-                    className="w-full pl-4 pr-12 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg font-medium"
+                    className="w-full text-slate-700 pl-4 pr-12 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg font-medium"
                   />
                   <div className="absolute right-4 top-3.5 text-gray-400 font-medium">STT</div>
                 </div>

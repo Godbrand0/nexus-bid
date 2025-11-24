@@ -85,28 +85,20 @@ export function useAuctionNFTMetadata(contractAddress: string, tokenId: string):
             if (response.ok) {
               const data = await response.json()
               if (data.status === '1') {
-                // Find the specific token in the transaction history
-                const tokenTx = data.result.find((tx: any) => tx.tokenID === tokenId)
-                if (tokenTx) {
-                  metadata = {
-                    name: tokenTx.tokenName || `NFT #${tokenId}`,
-                    description: '',
-                    image: '',
-                  }
-                  cacheMetadata(contractAddress, tokenId, metadata)
-                }
+                // Note: Blockscout doesn't provide image URLs, so we skip creating metadata here
+                console.log(`🔍 useAuctionNFTMetadata: Found token in Blockscout but no image available`)
               }
             }
           } catch (apiErr) {
+            console.error(`🔍 useAuctionNFTMetadata: Blockscout API error:`, apiErr)
           }
         }
       }
 
-      nft.metadata = metadata || {
-        name: `NFT #${tokenId}`,
-        description: '',
-        image: '',
+      if (metadata) {
+        nft.metadata = metadata
       }
+      // Don't set fallback metadata with empty image - let components handle missing metadata
 
       setNftMetadata(nft)
     } catch (err) {

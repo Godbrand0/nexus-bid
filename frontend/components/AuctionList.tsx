@@ -243,7 +243,7 @@ export default function AuctionList({ currentAddress, viewMode = 'grid' }: Aucti
                         </p>
                       </div>
                       
-                      <div className="space-y-2 text-sm">
+                      <div className="space-y-2 text-gray-600 text-sm">
                         <div className="flex justify-between">
                           <span className="text-gray-600">Starting Price:</span>
                           <span className="font-medium">{formatEther(auction.startingPrice)} STT</span>

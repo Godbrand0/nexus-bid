@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { ExternalLink, ImageIcon } from 'lucide-react'
 import { type NFT } from '@/lib/nft-utils'
 import { formatNFTName, getPlaceholderImage, shortenAddress } from '@/lib/nft-utils'
@@ -12,45 +11,11 @@ interface NFTCardProps {
 }
 
 export default function NFTCard({ nft, onClick, onCreateAuction }: NFTCardProps) {
-  const [imageError, setImageError] = useState(false)
-  const [imageLoading, setImageLoading] = useState(true)
-  const [currentGatewayIndex, setCurrentGatewayIndex] = useState(0)
+  // Simple image URL - use metadata image or placeholder (matching AuctionList approach)
+  const imageUrl = nft.metadata?.image || getPlaceholderImage()
+  
+  console.log(`🔍 NFTCard: Image URL for NFT ${nft.tokenId}:`, imageUrl)
 
-  // IPFS gateways for fallback
-  const IPFS_GATEWAYS = [
-    'https://ipfs.io/ipfs/',
-    'https://cloudflare-ipfs.com/ipfs/',
-    'https://gateway.pinata.cloud/ipfs/',
-    'https://dweb.link/ipfs/',
-  ]
-
-  const getImageUrl = () => {
-    if (imageError) {
-      return getPlaceholderImage()
-    }
-    
-    const image = nft.metadata?.image || getPlaceholderImage()
-    
-    // If it's already an HTTP URL, return as is
-    if (image.startsWith('http://') || image.startsWith('https://')) {
-      return image
-    }
-    
-    // If it's an IPFS URI, convert using current gateway
-    if (image.startsWith('ipfs://')) {
-      const hash = image.replace('ipfs://', '')
-      return `${IPFS_GATEWAYS[currentGatewayIndex]}${hash}`
-    }
-    
-    // If it's just a hash, use current gateway
-    if (image.startsWith('Qm') || image.startsWith('baf')) {
-      return `${IPFS_GATEWAYS[currentGatewayIndex]}${image}`
-    }
-    
-    return image
-  }
-
-  const imageUrl = getImageUrl()
   const nftName = formatNFTName(nft.metadata || null, nft.tokenId)
   const explorerUrl = `https://shannon-explorer.somnia.network/address/${nft.contractAddress}`
 
@@ -62,43 +27,15 @@ export default function NFTCard({ nft, onClick, onCreateAuction }: NFTCardProps)
     >
       {/* NFT Image */}
       <div className="relative aspect-square bg-gray-100 overflow-hidden">
-        {imageLoading && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        )}
         <img
           src={imageUrl}
           alt={nftName}
-          className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-110 ${
-            imageLoading ? 'opacity-0' : 'opacity-100'
-          }`}
-          onLoad={() => {
-            console.log(`🖼️ Image loaded successfully: ${imageUrl}`)
-            setImageLoading(false)
-          }}
-          onError={(e) => {
-            console.error(`❌ Image failed to load: ${imageUrl}`, e)
-            
-            // Try next IPFS gateway if available
-            if (currentGatewayIndex < IPFS_GATEWAYS.length - 1) {
-              console.log(`🔄 Trying next IPFS gateway: ${currentGatewayIndex + 1}`)
-              setCurrentGatewayIndex(currentGatewayIndex + 1)
-            } else {
-              console.error('❌ All IPFS gateways failed, using placeholder')
-              setImageError(true)
-              setImageLoading(false)
-            }
-          }}
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+        
           crossOrigin="anonymous"
         />
         
-        {/* Overlay on hover */}
-        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <ImageIcon className="w-12 h-12 text-white" />
-          </div>
-        </div>
+       
       </div>
 
       {/* NFT Info */}

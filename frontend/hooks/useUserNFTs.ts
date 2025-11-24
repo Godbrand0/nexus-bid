@@ -109,10 +109,12 @@ export function useUserNFTs(): UseUserNFTsResult {
 
               // Try to get cached metadata first
               let metadata = getCachedMetadata(token.contractAddress, tokenId)
+              console.log(`🔍 useUserNFTs: Cached metadata for ${token.contractAddress}:${tokenId}:`, metadata)
 
               // If not cached, fetch token URI and metadata
               if (!metadata) {
                 try {
+                  console.log(`🔍 useUserNFTs: Fetching tokenURI for ${token.contractAddress}:${tokenId}`)
                   // Fetch token URI
                   const tokenURI = await publicClient.readContract({
                     address: token.contractAddress as Address,
@@ -130,22 +132,27 @@ export function useUserNFTs(): UseUserNFTsResult {
                   }) as string
 
                   nft.tokenURI = tokenURI
+                  console.log(`🔍 useUserNFTs: Got tokenURI for ${token.contractAddress}:${tokenId}:`, tokenURI)
 
                   // Fetch metadata
                   metadata = await fetchNFTMetadata(tokenURI)
+                  console.log(`🔍 useUserNFTs: Fetched metadata for ${token.contractAddress}:${tokenId}:`, metadata)
                   if (metadata) {
                     cacheMetadata(token.contractAddress, tokenId, metadata)
+                    console.log(`🔍 useUserNFTs: Cached metadata for ${token.contractAddress}:${tokenId}`)
                   } else {
+                    console.log(`🔍 useUserNFTs: Failed to fetch metadata for ${token.contractAddress}:${tokenId}`)
                   }
                 } catch (err) {
+                  console.error(`🔍 useUserNFTs: Error fetching metadata for ${token.contractAddress}:${tokenId}:`, err)
                 }
               }
 
-              nft.metadata = metadata || {
-                name: `NFT #${tokenId}`,
-                description: '',
-                image: '',
+              if (metadata) {
+                nft.metadata = metadata
               }
+              // Don't set fallback metadata with empty image - let NFTCard handle missing metadata
+              console.log(`🔍 useUserNFTs: Final metadata for ${token.contractAddress}:${tokenId}:`, nft.metadata)
               nftArray.push(nft)
             }
           }
