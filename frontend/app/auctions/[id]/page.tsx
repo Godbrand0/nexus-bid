@@ -254,16 +254,20 @@ export default function AuctionDetailPage() {
         return
       }
 
-      // Request to add NFT to wallet
-      const wasAdded = await window.ethereum.request({
-        method: 'wallet_watchAsset',
-        params: {
-          type: 'ERC721',
-          options: {
-            address: localAuction.nftContract,
-            tokenId: localAuction.tokenId.toString(),
-          },
+      // Type the ethereum request properly
+      const ethereum = window.ethereum as any
+      const watchAssetParams = {
+        type: 'ERC721',
+        options: {
+          address: localAuction.nftContract,
+          tokenId: localAuction.tokenId.toString(),
         },
+      }
+
+      // Request to add NFT to wallet
+      const wasAdded = await ethereum.request({
+        method: 'wallet_watchAsset',
+        params: [watchAssetParams],
       })
 
       if (wasAdded) {
