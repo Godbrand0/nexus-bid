@@ -66,10 +66,10 @@ export default function Home() {
         {!isConnected ? (
           <div className="text-center py-12">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-              Welcome to Nexus Auction House
+              Welcome to Nexus-Bid
             </h2>
             <p className="text-lg text-gray-600 mb-8">
-              Connect your wallet to start creating and bidding on auctions
+              Connect your wallet to start earning higher returns on your NFTs.
             </p>
           </div>
         ) : (
