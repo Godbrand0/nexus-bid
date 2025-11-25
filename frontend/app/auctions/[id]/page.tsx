@@ -413,7 +413,7 @@ export default function AuctionDetailPage() {
                     </div>
                     <div className="flex justify-between items-center py-3 border-b border-gray-200/50">
                       <span className="text-gray-600 italic">Token ID</span>
-                      <span className="font-bold text-charcoal">#{localAuction.tokenId.toString()}</span>
+                      <span className="font-bold text-charcoal">{localAuction.tokenId.toString()}</span>
                     </div>
                     <div className="flex justify-between items-center py-3 border-b border-gray-200/50">
                       <span className="text-gray-600 italic">Seller</span>
