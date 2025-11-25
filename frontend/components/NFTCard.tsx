@@ -11,6 +11,10 @@ interface NFTCardProps {
 }
 
 export default function NFTCard({ nft, onClick, onCreateAuction }: NFTCardProps) {
+  console.log('🔍 DEBUG: NFTCard received nft:', nft)
+  console.log('🔍 DEBUG: NFTCard nft.tokenId:', nft?.tokenId)
+  console.log('🔍 DEBUG: NFTCard nft.contractAddress:', nft?.contractAddress)
+  
   // Simple image URL - use metadata image or placeholder (matching AuctionList approach)
   const imageUrl = nft.metadata?.image || getPlaceholderImage()
   

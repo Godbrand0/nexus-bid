@@ -156,14 +156,20 @@ export default function MyNFTs() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {nfts.map((nft) => (
-              <NFTCard
-                key={`${nft.contractAddress}-${nft.tokenId}`}
-                nft={nft}
-                onClick={() => setSelectedNFT(`${nft.contractAddress}-${nft.tokenId}`)}
-                onCreateAuction={() => handleCreateAuction(nft.contractAddress, nft.tokenId)}
-              />
-            ))}
+            {nfts.map((nft, index) => {
+              console.log(`🔍 DEBUG: MyNFTs rendering NFT ${index}:`, nft)
+              console.log(`🔍 DEBUG: MyNFTs NFT ${index} tokenId:`, nft?.tokenId)
+              console.log(`🔍 DEBUG: MyNFTs NFT ${index} contractAddress:`, nft?.contractAddress)
+              
+              return (
+                <NFTCard
+                  key={`${nft.contractAddress}-${nft.tokenId}`}
+                  nft={nft}
+                  onClick={() => setSelectedNFT(`${nft.contractAddress}-${nft.tokenId}`)}
+                  onCreateAuction={() => handleCreateAuction(nft.contractAddress, nft.tokenId)}
+                />
+              )
+            })}
           </div>
         )}
       </div>

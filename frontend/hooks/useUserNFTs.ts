@@ -101,11 +101,16 @@ export function useUserNFTs(): UseUserNFTsResult {
           // Add only tokens currently owned by the user
           for (const [tokenId, status] of tokenOwnership.entries()) {
             if (status === 'owned') {
+              console.log('🔍 DEBUG: Creating NFT object for tokenId:', tokenId)
+              console.log('🔍 DEBUG: Token contract address:', token.contractAddress)
+              
               const nft: NFT = {
                 tokenId,
                 contractAddress: token.contractAddress,
                 owner: address,
               }
+              
+              console.log('🔍 DEBUG: Created NFT object:', nft)
 
               // Try to get cached metadata first
               let metadata = getCachedMetadata(token.contractAddress, tokenId)

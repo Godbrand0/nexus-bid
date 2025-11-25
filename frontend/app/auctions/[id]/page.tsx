@@ -248,6 +248,21 @@ export default function AuctionDetailPage() {
 
   const handleImportNFT = async () => {
     try {
+      console.log('🔍 DEBUG: handleImportNFT called')
+      console.log('🔍 DEBUG: localAuction:', localAuction)
+      console.log('🔍 DEBUG: localAuction.nftContract:', localAuction?.nftContract)
+      console.log('🔍 DEBUG: localAuction.tokenId:', localAuction?.tokenId)
+      
+      // Validate required data before proceeding
+      if (!localAuction?.nftContract || !localAuction?.tokenId) {
+        console.error('🔍 DEBUG: Missing required NFT data:', {
+          nftContract: localAuction?.nftContract,
+          tokenId: localAuction?.tokenId
+        })
+        alert('NFT data is incomplete. Please refresh the page and try again.')
+        return
+      }
+      
       // Check if wallet supports watchAsset
       if (typeof window.ethereum === 'undefined') {
         alert('Please install MetaMask or another Web3 wallet')
@@ -256,19 +271,68 @@ export default function AuctionDetailPage() {
 
       // Type the ethereum request properly
       const ethereum = window.ethereum as any
+      
+      // Ensure tokenId is properly formatted as string
+      const tokenIdStr = localAuction.tokenId.toString()
+      const contractAddress = localAuction.nftContract
+      
+      // Validate address format
+      if (!contractAddress.startsWith('0x') || contractAddress.length !== 42) {
+        console.error('🔍 DEBUG: Invalid contract address format:', contractAddress)
+        alert('Invalid NFT contract address')
+        return
+      }
+      
       const watchAssetParams = {
         type: 'ERC721',
         options: {
-          address: localAuction.nftContract,
-          tokenId: localAuction.tokenId.toString(),
+          address: contractAddress,
+          tokenId: tokenIdStr,
         },
       }
 
+      console.log('🔍 DEBUG: watchAssetParams:', watchAssetParams)
+
       // Request to add NFT to wallet
-      const wasAdded = await ethereum.request({
-        method: 'wallet_watchAsset',
-        params: [watchAssetParams],
-      })
+      // Note: Some wallets have issues with the params array format, try both formats
+      let wasAdded = false
+      try {
+        // Try standard format first
+        wasAdded = await ethereum.request({
+          method: 'wallet_watchAsset',
+          params: [watchAssetParams],
+        })
+      } catch (paramsError) {
+        console.log('🔍 DEBUG: Standard format failed, trying alternative format:', paramsError)
+        try {
+          // Try alternative format (without array wrapper)
+          wasAdded = await ethereum.request({
+            method: 'wallet_watchAsset',
+            params: watchAssetParams,
+          })
+        } catch (altError) {
+          console.log('🔍 DEBUG: Alternative format also failed:', altError)
+          
+          // Try one more format - some wallets expect different structure
+          try {
+            wasAdded = await ethereum.request({
+              method: 'wallet_watchAsset',
+              params: {
+                type: 'ERC721',
+                options: {
+                  address: contractAddress,
+                  tokenId: tokenIdStr,
+                }
+              }
+            })
+          } catch (finalError) {
+            console.log('🔍 DEBUG: All formats failed, showing manual instructions')
+            // Fallback: provide manual instructions
+            alert(`Unable to automatically add NFT to wallet. Please add it manually:\n\nContract Address: ${contractAddress}\nToken ID: ${tokenIdStr}\n\nNetwork: Somnia Testnet`)
+            return
+          }
+        }
+      }
 
       if (wasAdded) {
         alert('NFT imported successfully! Check your wallet.')
@@ -277,7 +341,14 @@ export default function AuctionDetailPage() {
       }
     } catch (error) {
       console.error('Error importing NFT:', error)
-      alert('Failed to import NFT: ' + (error as Error).message)
+      console.log('🔍 DEBUG: Error details:', error)
+      
+      // Provide more helpful error message
+      if ((error as any)?.code === -32603) {
+        alert('Wallet error: Unable to add NFT. This may be due to wallet compatibility issues. Please try again or add the NFT manually using the contract address and token ID shown on the page.')
+      } else {
+        alert('Failed to import NFT: ' + (error as Error).message)
+      }
     }
   }
 
